@@ -38,16 +38,19 @@ endif ()
 
 set(LIB_FILES
         src/Database.cpp
+        src/Error.cpp
         )
 
 include_directories(src)
 
+# Sqlite
+
+add_library(sqlite-local SHARED src/sqlite/sqlite3.c)
+
 # Demo target
 
-add_executable(demo
-        ${LIB_FILES}
-        src/main.cpp
-        )
+add_executable(demo ${LIB_FILES} src/main.cpp)
+target_link_libraries(demo sqlite-local dl pthread)
 
 # Unit test files
 
@@ -58,5 +61,5 @@ set(TEST_FILES
 # Test target
 
 add_executable(tests ${LIB_FILES} ${TEST_FILES})
-target_link_libraries(tests gtest_main)
+target_link_libraries(tests gtest_main sqlite-local dl pthread)
 add_test(NAME tests COMMAND tests)

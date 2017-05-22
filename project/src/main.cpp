@@ -2,7 +2,6 @@
 #include "Database.h"
 
 int main() {
-    sqleicht::Database db;
-    std::cout << "Hello, World! " << db.dummyTrue() << std::endl;
+    sqleicht::Database db("demo.db");
     return 0;
 }

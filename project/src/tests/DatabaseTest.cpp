@@ -1,25 +1,12 @@
 #include "Database.h"
 #include "gtest/gtest.h"
 
-class DatabaseTest : public ::testing::Test {
-protected:
-    // You can define per-test set-up and tear-down logic as usual.
-    virtual void SetUp() {
-        database = new sqleicht::Database();
-    }
-
-    virtual void TearDown() {
-        delete database;
-    }
-
-    // Some expensive resource shared by all tests.
-    sqleicht::Database *database;
-};
-
-TEST_F(DatabaseTest, dummyTrue) {
-    EXPECT_TRUE(database->dummyTrue());
+TEST(DatabaseTest, failsOnOpeningNonExistingDatabase) {
+    sqleicht::Database db("nonexisting.db", sqleicht::Database::Mode::READ_ONLY);
+    ASSERT_FALSE(db.is_valid());
 }
 
-TEST_F(DatabaseTest, dummyFalse) {
-    EXPECT_FALSE(database->dummyFalse());
+TEST(DatabaseTest, succeedsOnCreatingDatabase) {
+    sqleicht::Database db("created.db", sqleicht::Database::Mode::READ_WRITE_CREATE);
+    ASSERT_TRUE(db.is_valid());
 }
