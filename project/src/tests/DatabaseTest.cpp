@@ -1,4 +1,7 @@
 #include "Database.h"
+#include "Query.h"
+#include "QueryBuilder.h"
+#include "Expression.h"
 #include "gtest/gtest.h"
 
 TEST(DatabaseTest, failsOnOpeningNonExistingDatabase) {

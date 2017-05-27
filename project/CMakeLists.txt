@@ -39,7 +39,7 @@ endif ()
 set(LIB_FILES
         src/Database.cpp
         src/Error.cpp
-        )
+        src/RawQuery.cpp src/RawQuery.h src/QueryBuilder.cpp src/QueryBuilder.h src/PreparedStatement.cpp src/PreparedStatement.h src/Cursor.cpp src/Cursor.h src/Expression.cpp src/Expression.h src/Query.cpp src/Query.h)
 
 include_directories(src)
 
@@ -49,14 +49,14 @@ add_library(sqlite-local SHARED src/sqlite/sqlite3.c)
 
 # Demo target
 
-add_executable(demo ${LIB_FILES} src/main.cpp)
+add_executable(demo ${LIB_FILES} src/main.cpp src/RawQuery.cpp src/RawQuery.h src/Expression.cpp src/Expression.h)
 target_link_libraries(demo sqlite-local dl pthread)
 
 # Unit test files
 
 set(TEST_FILES
         src/tests/DatabaseTest.cpp
-        )
+        src/tests/QueryBuilderTest.cpp src/tests/TestTable.h)
 
 # Test target
 
