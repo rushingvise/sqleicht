@@ -93,8 +93,7 @@ TEST_F(QueryBuilderTest, selectOrderByColumnExpressionSingleAscending) {
 	RawQuery raw_query = select()
 			.all_columns()
 			.from(TestTable::TABLE_NAME)
-			.order_by(order_expr)
-			.ascending()
+			.order_by(order_expr, ORDER::ASCENDING)
 			.build().raw_query();
 
 	ASSERT_EQ(raw_query.raw_sql_query(), "SELECT * FROM " + TestTable::TABLE_NAME + " ORDER BY \"" + TestTable::COL_1 + "\" ASC;");
@@ -105,8 +104,7 @@ TEST_F(QueryBuilderTest, selectOrderByColumnExpressionSingleDescending) {
 	RawQuery raw_query = select()
 			.all_columns()
 			.from(TestTable::TABLE_NAME)
-			.order_by(order_expr)
-			.descending()
+			.order_by(order_expr, ORDER::DESCENDING)
 			.build().raw_query();
 
 	ASSERT_EQ(raw_query.raw_sql_query(), "SELECT * FROM " + TestTable::TABLE_NAME + " ORDER BY \"" + TestTable::COL_1 + "\" DESC;");

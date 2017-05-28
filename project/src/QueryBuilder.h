@@ -7,15 +7,16 @@
 
 namespace sqleicht {
 
+	enum class ORDER : uint8_t {
+		ASCENDING,
+		DESCENDING
+	};
+
 	class Database;
 
 	class Expression;
 
-	class QueryBuilderColumnResult;
-
 	class QueryBuilder;
-
-	class QueryBuilderFrom;
 
 	class Query;
 
@@ -23,155 +24,152 @@ namespace sqleicht {
 	public:
 		virtual ~QueryBuilderBase() {};
 
-		virtual PreparedStatement prepare(Database &db) =0;
+//		virtual PreparedStatement prepare(Database &db) =0;
 		virtual Query build() =0;
 	};
 
-	class QueryBuilderColumnResult {
+	class DistinctSelector {
 	public:
-		virtual ~QueryBuilderColumnResult() {};
+		virtual ~DistinctSelector() {};
 
-		virtual QueryBuilderFrom &
-		column(std::string column_name) =0; // can be followed by another column, from, where, group by
-		virtual QueryBuilderFrom &
-		columns(std::initializer_list<std::string> column_name) =0; // can be followed by from, where, group by
-		virtual QueryBuilderFrom &all_columns() =0; // can be followed by from, where, group by
+		virtual QueryBuilder &distinct() =0;
+
+		// we can skip ALL since it should be fairly obvious it is the default
 	};
 
-	class QueryBuilderDistinct : public virtual QueryBuilderColumnResult {
+	class LimitBuilder {
 	public:
-		virtual ~QueryBuilderDistinct() {};
-
-		virtual QueryBuilderColumnResult &distinct() =0;
-	};
-
-	class QueryBuilderLimit : public virtual QueryBuilderBase {
-	public:
-		virtual ~QueryBuilderLimit() {};
+		virtual ~LimitBuilder() {};
 
 		virtual QueryBuilderBase &limit(Expression &limit_expression) =0;
 		virtual QueryBuilderBase &limit(unsigned int limit) =0;
 		virtual QueryBuilderBase &limit(unsigned int limit, unsigned int offset) =0;
 	};
 
-	class QueryBuilderOrderDirection;
-
-	class QueryBuilderOrderBy : public virtual QueryBuilderLimit {
+	class OrderByBuilder {
 	public:
-		virtual ~QueryBuilderOrderBy() {};
+		virtual ~OrderByBuilder() {};
 
-		virtual QueryBuilderOrderDirection &order_by(Expression &order_expression) =0; // can be followed by direction, another order by or limit
-		virtual QueryBuilderOrderDirection &order_by(const std::string &order_expression) =0; // can be followed by direction, another order by or limit
+		virtual QueryBuilder &order_by(Expression &order_expression) =0; // can be followed by direction, another order by or limit
+		virtual QueryBuilder &order_by(const std::string &order_expression) =0; // can be followed by direction, another order by or limit
+
+		virtual QueryBuilder &order_by(Expression &order_expression, ORDER order) =0;
+		virtual QueryBuilder &order_by(const std::string &order_expression, ORDER order) =0;
 	};
 
-	class QueryBuilderOrderDirection : public virtual QueryBuilderOrderBy {
+	class HavingBuilder {
 	public:
-		virtual ~QueryBuilderOrderDirection() {};
+		virtual ~HavingBuilder() {};
 
-		virtual QueryBuilderOrderBy &ascending() =0; // can be followed by order by or limit
-		virtual QueryBuilderOrderBy &descending() =0; // can be followed by order by or limit
-
+		virtual QueryBuilder &having(Expression &having_expression) =0;
+		virtual QueryBuilder &having(std::string &having_expression) =0;
 	};
 
-	class QueryBuilderSelectTail : public virtual QueryBuilderOrderBy {
+	class GroupByBuilder {
 	public:
-		virtual ~QueryBuilderSelectTail() {};
+		virtual ~GroupByBuilder() {};
 
+		virtual QueryBuilder &group_by(Expression &group_expression) =0;
+		virtual QueryBuilder &group_by(std::string &group_expression) =0;
 	};
 
-
-	class QueryBuilderHaving : public virtual QueryBuilderBase {
+	class WhereBuilder {
 	public:
-		virtual ~QueryBuilderHaving() {};
+		virtual ~WhereBuilder() {};
 
-		virtual QueryBuilderSelectTail &having(Expression &having_expression) =0;
+		virtual QueryBuilder &where(Expression &where_clause) = 0; // can be followed by group by
 	};
 
-	class QueryBuilderGroupBy : public virtual QueryBuilderSelectTail {
+	class TableSelector {
 	public:
-		virtual ~QueryBuilderGroupBy() {};
+		virtual ~TableSelector() {};
 
-		virtual QueryBuilderHaving &group_by(Expression &group_expression) =0; //  can be followed by having
-	};
+		virtual QueryBuilder &from(std::string table_name) =0;  // can be followed by where, group by
 
-	class QueryBuilderWhere : public virtual QueryBuilderGroupBy {
-	public:
-		virtual ~QueryBuilderWhere() {};
-
-		virtual QueryBuilderGroupBy &where(Expression &where_clause) = 0; // can be followed by group by
-	};
-
-	class QueryBuilderFrom : public virtual QueryBuilderWhere {
-	public:
-		virtual ~QueryBuilderFrom() {};
-
-		virtual QueryBuilderWhere &from(std::string table_name) =0;  // can be followed by where, group by
+		//TODO add support for subquery
 	};
 
 
-	class QueryBuilderSelect : public virtual QueryBuilderDistinct {
+	class ColumnSelector {
 	public:
-		virtual ~QueryBuilderSelect() {};
+		virtual ~ColumnSelector() {};
 
-		// column selector
+		virtual QueryBuilder &column(std::string column_name) =0;
 
-		QueryBuilderColumnResult &distinct(); // can be followed by column selector only
-		QueryBuilderFrom &column(std::string column_name); // can be followed by another column, from, where, group by
-		QueryBuilderFrom &
-		columns(std::initializer_list<std::string> column_name); // can be followed by from, where, group by
-		QueryBuilderFrom &all_columns(); // can be followed by from, where, group by
+		virtual QueryBuilder &column(std::string table_name, std::string column_name) =0;
+
+		virtual QueryBuilder &
+		columns(std::initializer_list<std::string> column_name) =0;
+
+		virtual QueryBuilder &all_columns() =0;
 
 	};
 
-	// needs to be hidden from the public
-	class QueryBuilderImpl
-			: public virtual QueryBuilderSelect,
-			  public virtual QueryBuilderFrom,
-			  public virtual QueryBuilderHaving,
-			  public virtual QueryBuilderSelectTail,
-			  public virtual QueryBuilderOrderDirection,
-			  public virtual QueryBuilderOrderBy,
-			  public virtual QueryBuilderBase {
+	class QueryBuilder
+			: public QueryBuilderBase,
+			  public TableSelector,
+			  public DistinctSelector,
+			  public ColumnSelector,
+			  public WhereBuilder,
+			  public GroupByBuilder,
+			  public HavingBuilder,
+			  public OrderByBuilder,
+			  public LimitBuilder {
 	public:
 
-		virtual ~QueryBuilderImpl();
+		virtual ~QueryBuilder();
 
-		PreparedStatement prepare(Database &db) override;
+//		PreparedStatement prepare(Database &db) override;
 
 		Query build() override ;
 
-		// column selector
+		QueryBuilder &distinct() override;
 
-		QueryBuilderColumnResult &distinct() override;
+		QueryBuilder &column(std::string column_name) override;
 
-		QueryBuilderFrom &column(std::string column_name) override;
+		QueryBuilder &columns(std::initializer_list<std::string> column_name) override;
 
-		QueryBuilderFrom &columns(std::initializer_list<std::string> column_name) override;
+		QueryBuilder &all_columns() override;
 
-		QueryBuilderFrom &all_columns() override;
+		QueryBuilder &from(std::string table_name) override;
 
-		QueryBuilderWhere &from(std::string table_name) override;
+		QueryBuilder &where(Expression &where_clause) override ;
 
-		QueryBuilderGroupBy &where(Expression &where_clause) override ;
+		QueryBuilder &group_by(Expression &group_expression) override ;
 
-		QueryBuilderHaving &group_by(Expression &group_expression) override ;
+		QueryBuilder &having(Expression &having_expression) override ;
 
-		QueryBuilderSelectTail &having(Expression &having_expression) override ;
+		QueryBuilder & order_by(Expression &order_expression) override ;
 
-		QueryBuilderOrderDirection & order_by(Expression &order_expression) override ;
+		QueryBuilder & order_by(const std::string &order_expression) override ;
 
-		QueryBuilderOrderDirection & order_by(const std::string &order_expression) override ;
+		QueryBuilder &limit(Expression &limit_expression) override ;
 
-		QueryBuilderOrderBy &ascending() override ;
+		QueryBuilder &limit(unsigned int limit) override ;
 
-		QueryBuilderOrderBy &descending() override ;
+		QueryBuilder &limit(unsigned int limit, unsigned int offset) override ;
 
-		QueryBuilderBase &limit(Expression &limit_expression) override ;
+		QueryBuilder &group_by(std::string &group_expression) override;
 
-		QueryBuilderBase &limit(unsigned int limit) override ;
+		QueryBuilder &having(std::string &having_expression) override;
 
-		QueryBuilderBase &limit(unsigned int limit, unsigned int offset) override ;
+		QueryBuilder &order_by(Expression &order_expression, ORDER order) override;
+
+		QueryBuilder &order_by(const std::string &order_expression, ORDER order) override;
+
+		QueryBuilder &column(std::string table_name, std::string column_name) override;
 	};
 
-	QueryBuilderSelect select(); // returns column selector with optional distinct
+	class CompoundQueryBuilder : public QueryBuilderBase {
+	public:
+
+		Query build() override ;
+
+	};
+
+	QueryBuilder select();
+
+	CompoundQueryBuilder select(Query query);
+
+	CompoundQueryBuilder select(QueryBuilder query_builder);
 }
