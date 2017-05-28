@@ -7,25 +7,23 @@
 
 namespace sqleicht {
 
+	class Database;
+	class Expression;
+	class QueryBuilder;
+	class CompoundQueryBuilder;
+	class Query;
+
 	enum class ORDER : uint8_t {
 		ASCENDING,
 		DESCENDING
 	};
-
-	class Database;
-
-	class Expression;
-
-	class QueryBuilder;
-
-	class Query;
 
 	class QueryBuilderBase {
 	public:
 		virtual ~QueryBuilderBase() {};
 
 //		virtual PreparedStatement prepare(Database &db) =0;
-		virtual Query build() =0;
+		virtual Query build() const =0;
 	};
 
 	class DistinctSelector {
@@ -41,9 +39,9 @@ namespace sqleicht {
 	public:
 		virtual ~LimitBuilder() {};
 
-		virtual QueryBuilderBase &limit(Expression &limit_expression) =0;
-		virtual QueryBuilderBase &limit(unsigned int limit) =0;
-		virtual QueryBuilderBase &limit(unsigned int limit, unsigned int offset) =0;
+		virtual QueryBuilder &limit(Expression &limit_expression) =0;
+		virtual QueryBuilder &limit(unsigned int limit) =0;
+		virtual QueryBuilder &limit(unsigned int limit, unsigned int offset) =0;
 	};
 
 	class OrderByBuilder {
@@ -121,11 +119,13 @@ namespace sqleicht {
 
 //		PreparedStatement prepare(Database &db) override;
 
-		Query build() override ;
+		Query build() const override ;
 
 		QueryBuilder &distinct() override;
 
 		QueryBuilder &column(std::string column_name) override;
+
+		QueryBuilder &column(std::string table_name, std::string column_name) override ;
 
 		QueryBuilder &columns(std::initializer_list<std::string> column_name) override;
 
@@ -157,19 +157,69 @@ namespace sqleicht {
 
 		QueryBuilder &order_by(const std::string &order_expression, ORDER order) override;
 
-		QueryBuilder &column(std::string table_name, std::string column_name) override;
 	};
 
-	class CompoundQueryBuilder : public QueryBuilderBase {
+	class CompoundLimitBuilder {
+	public:
+		virtual ~CompoundLimitBuilder() {};
+
+		virtual CompoundQueryBuilder &limit(Expression &limit_expression) =0;
+		virtual CompoundQueryBuilder &limit(unsigned int limit) =0;
+		virtual CompoundQueryBuilder &limit(unsigned int limit, unsigned int offset) =0;
+	};
+
+	class CompoundOrderByBuilder {
+	public:
+		virtual ~CompoundOrderByBuilder() {};
+
+		virtual CompoundQueryBuilder &order_by(Expression &order_expression) =0; // can be followed by direction, another order by or limit
+		virtual CompoundQueryBuilder &order_by(const std::string &order_expression) =0; // can be followed by direction, another order by or limit
+
+		virtual CompoundQueryBuilder &order_by(Expression &order_expression, ORDER order) =0;
+		virtual CompoundQueryBuilder &order_by(const std::string &order_expression, ORDER order) =0;
+	};
+
+	class CompoundQueryBuilder
+			: public QueryBuilderBase,
+			  public CompoundLimitBuilder,
+			  public CompoundOrderByBuilder {
 	public:
 
-		Query build() override ;
+		virtual ~CompoundQueryBuilder();
+
+		Query build() const override ;
+
+		CompoundQueryBuilder &limit(Expression &limit_expression) override;
+
+		CompoundQueryBuilder &limit(unsigned int limit) override;
+
+		CompoundQueryBuilder &limit(unsigned int limit, unsigned int offset) override;
+
+		CompoundQueryBuilder &order_by(Expression &order_expression) override;
+
+		CompoundQueryBuilder &order_by(const std::string &order_expression) override;
+
+		CompoundQueryBuilder &order_by(Expression &order_expression, ORDER order) override;
+
+		CompoundQueryBuilder &order_by(const std::string &order_expression, ORDER order) override;
+
+		CompoundQueryBuilder &union_with(const Query &query);
+		CompoundQueryBuilder &union_with(QueryBuilder &query_builder);
+
+		CompoundQueryBuilder &union_all(const Query &query);
+		CompoundQueryBuilder &union_all(QueryBuilder &queryBuilder);
+
+		CompoundQueryBuilder &intersect(const Query &query);
+		CompoundQueryBuilder &intersect(QueryBuilder &queryBuilder);
+
+		CompoundQueryBuilder &except(const Query &query);
+		CompoundQueryBuilder &except(QueryBuilder &queryBuilder);
 
 	};
 
 	QueryBuilder select();
 
-	CompoundQueryBuilder select(Query query);
+	CompoundQueryBuilder select(const Query &query);
 
-	CompoundQueryBuilder select(QueryBuilder query_builder);
+	CompoundQueryBuilder select(QueryBuilder &query_builder);
 }

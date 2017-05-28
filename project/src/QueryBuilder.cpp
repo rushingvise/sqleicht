@@ -14,8 +14,8 @@ QueryBuilder::~QueryBuilder() {
 //    return PreparedStatement();
 //}
 
-Query QueryBuilder::build() {
-	return Query(); // pass the builder along
+Query QueryBuilder::build() const {
+	return Query();
 }
 
 QueryBuilder& QueryBuilder::distinct() {
@@ -28,6 +28,10 @@ QueryBuilder& QueryBuilder::all_columns() {
 
 QueryBuilder& QueryBuilder::column(string column_name) {
     return *this;
+}
+
+QueryBuilder& QueryBuilder::column(std::string table_name, std::string column_name) {
+	return *this;
 }
 
 QueryBuilder& QueryBuilder::columns(initializer_list<string> column_name) {
@@ -86,13 +90,72 @@ QueryBuilder &QueryBuilder::order_by(const string &order_expression, ORDER order
 	return *this;
 }
 
-QueryBuilder &QueryBuilder::column(std::string table_name, std::string column_name) {
+CompoundQueryBuilder::~CompoundQueryBuilder() {
+
+}
+
+Query CompoundQueryBuilder::build() const {
+	return Query();
+}
+
+CompoundQueryBuilder &CompoundQueryBuilder::limit(Expression &limit_expression) {
 	return *this;
 }
 
+CompoundQueryBuilder &CompoundQueryBuilder::limit(unsigned int limit) {
+	return *this;
+}
 
-Query CompoundQueryBuilder::build() {
-	return Query();
+CompoundQueryBuilder &CompoundQueryBuilder::limit(unsigned int limit, unsigned int offset) {
+	return *this;
+}
+
+CompoundQueryBuilder &CompoundQueryBuilder::order_by(Expression &order_expression) {
+	return *this;
+}
+
+CompoundQueryBuilder &CompoundQueryBuilder::order_by(const std::string &order_expression) {
+	return *this;
+}
+
+CompoundQueryBuilder &CompoundQueryBuilder::order_by(Expression &order_expression, ORDER order) {
+	return *this;
+}
+
+CompoundQueryBuilder &CompoundQueryBuilder::order_by(const std::string &order_expression, ORDER order) {
+	return *this;
+}
+
+CompoundQueryBuilder &CompoundQueryBuilder::union_with(const Query &query) {
+	return *this;
+}
+
+CompoundQueryBuilder &CompoundQueryBuilder::union_with(QueryBuilder &query_builder) {
+	return *this;
+}
+
+CompoundQueryBuilder &CompoundQueryBuilder::union_all(const Query &query) {
+	return *this;
+}
+
+CompoundQueryBuilder &CompoundQueryBuilder::union_all(QueryBuilder &queryBuilder) {
+	return *this;
+}
+
+CompoundQueryBuilder &CompoundQueryBuilder::intersect(const Query &query) {
+	return *this;
+}
+
+CompoundQueryBuilder &CompoundQueryBuilder::intersect(QueryBuilder &queryBuilder) {
+	return *this;
+}
+
+CompoundQueryBuilder &CompoundQueryBuilder::except(const Query &query) {
+	return *this;
+}
+
+CompoundQueryBuilder &CompoundQueryBuilder::except(QueryBuilder &queryBuilder) {
+	return *this;
 }
 
 QueryBuilder sqleicht::select() {
@@ -100,10 +163,10 @@ QueryBuilder sqleicht::select() {
     return builder;
 }
 
-CompoundQueryBuilder sqleicht::select(Query query) {
+CompoundQueryBuilder sqleicht::select(const Query &query) {
 	return CompoundQueryBuilder();
 }
 
-CompoundQueryBuilder sqleicht::select(QueryBuilder query_builder) {
+CompoundQueryBuilder sqleicht::select(QueryBuilder &query_builder) {
 	return CompoundQueryBuilder();
 }
